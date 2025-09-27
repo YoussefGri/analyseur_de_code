@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comparateur d'Offres</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #28a745; /* Vert plus vif */
+      --primary-hover: #1e7e34; /* Vert foncé */
+      --background-color: #f1f5f9;
+      --card-background: #ffffff;
+      --text-color: #1e293b;
+      --border-color: #e2e8f0;
+      --error-color: #ef4444;
+      --success-color: #22c55e;
+      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+    }
+
+    .form-input {
+      padding: 0.75rem 1.25rem; /* Réduit le padding vertical */
+      font-size: 1rem; /* Taille de texte inchangée mais ajustée pour être plus petit */
+      border: 2px solid var(--border-color);
+      border-radius: 0.75rem;
+      background-color: #f8fafc;
+      width: 100%; /* S'étend sur toute la largeur */
+      box-sizing: border-box;
+      transition: all 0.2s ease;
+      height: 40px; /* Ajuste la hauteur des inputs */
+    }
+
+    .form-input:hover {
+      border-color: var(--primary-color);
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+      background-color: white;
+    }
+
+    .loading {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .price-card {
+      transform: scale(1);
+      transition: transform 0.2s ease;
+    }
+
+    .price-card:hover {
+      transform: scale(1.02);
+    }
+
+    .tooltip {
+      @apply invisible absolute;
+    }
+
+    .has-tooltip:hover .tooltip {
+      @apply visible z-50;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto; /* Centre le contenu */
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+
+    .form-container {
+      display: flex;
+      justify-content: center; /* Centre horizontalement */
+      align-items: center; /* Centre verticalement */
+      flex-direction: column;
+      gap: 20px; /* Espace entre les champs */
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .form-container input,
+    .form-container button {
+      width: 100%;
+    }
+
+    .form-container button {
+      font-size: 1.125rem;
+      padding: 1rem;
+      background-color: var(--primary-color);
+      color: white;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .form-container button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    /* Grille responsive */
+    @media (min-width: 768px) {
+      .form-container {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+      }
+
+      .form-container input,
+      .form-container button {
+        width: 48%;
+      }
+    }
+  </style>
+
+</head>
+
+<body class="bg-gray-100">
+<div class="loading">
+  <div class="loading-spinner"></div>
+</div>
+
+<div class="min-h-screen">
+  <nav class="bg-green-600 p-4">
+    <div class="container mx-auto">
+      <h1 class="text-2xl font-bold text-white">Comparateur d'Offres</h1>
+    </div>
+  </nav>
+
+  <main class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+      <h2 class="text-xl font-semibold mb-6">Rechercher des offres</h2>
+
+      <form id="compareForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2" for="ville">
+            Ville
+          </label>
+          <input type="text" id="ville" name="ville" required
+                 class="form-input" placeholder="ex: Paris">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2" for="nombrePersonnes">
+            Nombre de personnes
+          </label>
+          <input type="number" id="nombrePersonnes" name="nombrePersonnes" min="1" required
+                 class="form-input" placeholder="ex: 2">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2" for="dateDebut">
+            Date d'arrivée
+          </label>
+          <input type="date" id="dateDebut" name="dateDebut" required
+                 class="form-input">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2" for="dateFin">
+            Date de départ
+          </label>
+          <input type="date" id="dateFin" name="dateFin" required
+                 class="form-input">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2" for="nombreEtoiles">
+            Nombre d'étoiles minimum
+          </label>
+          <div class="relative">
+            <input type="range" id="nombreEtoiles" name="nombreEtoiles" min="0" max="5" step="1" value="0"
+                   class="w-full form-input" oninput="this.nextElementSibling.value = this.value">
+            <output class="absolute -right-4 top-0 text-sm font-semibold">0</output>
+          </div>
+        </div>
+
+        <div class="md:col-span-2">
+          <button type="submit"
+                  class="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors duration-200">
+            Rechercher
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div id="compareResult" class="grid grid-cols-1 gap-6"></div>
+  </main>
+</div>
+
+<script>
+  document.getElementById('compareForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const ville = document.getElementById('ville').value.trim();
+    const dateDebut = document.getElementById('dateDebut').value;
+    const dateFin = document.getElementById('dateFin').value;
+    const nombrePersonnes = parseInt(document.getElementById('nombrePersonnes').value);
+    const nombreEtoiles = parseInt(document.getElementById('nombreEtoiles').value);
+
+    // Validation
+    const errors = [];
+    if (!ville) errors.push('La ville est obligatoire');
+    if (new Date(dateDebut) >= new Date(dateFin)) errors.push('La date de début doit être avant la date de fin');
+    if (new Date(dateDebut) < new Date()) errors.push('La date de début doit être dans le futur');
+    if (nombrePersonnes <= 0) errors.push('Le nombre de personnes doit être supérieur à zéro');
+    if (nombreEtoiles < 0 || nombreEtoiles > 5) errors.push('Le nombre d\'étoiles doit être entre 0 et 5');
+
+    if (errors.length > 0) {
+      showError(errors.join('\n'));
+      return;
+    }
+
+    compareOffers(ville, dateDebut, dateFin, nombrePersonnes, nombreEtoiles);
+  });
+
+  function showError(message) {
+    const alertEl = document.createElement('div');
+    alertEl.className = 'fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded';
+    alertEl.role = 'alert';
+    alertEl.innerHTML = `
+                <p class="font-bold">Erreur</p>
+                <p class="text-sm">${message}</p>
+            `;
+    document.body.appendChild(alertEl);
+    setTimeout(() => alertEl.remove(), 5000);
+  }
+
+  function compareOffers(ville, dateDebut, dateFin, nombrePersonnes, nombreEtoiles) {
+    document.querySelector('.loading').style.display = 'flex';
+
+    const url = 'http://localhost:8082/compare/offres?' +
+            'ville=' + encodeURIComponent(ville) +
+            '&dateDebut=' + encodeURIComponent(dateDebut) +
+            '&dateFin=' + encodeURIComponent(dateFin) +
+            '&nbPersonnes=' + encodeURIComponent(nombrePersonnes) +
+            '&nbEtoiles=' + encodeURIComponent(nombreEtoiles);
+
+    fetch(url, { method: 'POST' })
+            .then(response => {
+              if (response.status === 204) {
+                throw new Error('Aucune offre ne correspond aux critères spécifiés.');
+              }
+              if (!response.ok) {
+                return response.json().then(err => {
+                  throw new Error(err.error || 'Une erreur est survenue');
+                });
+              }
+              return response.json();
+            })
+            .then(data => {
+              displayComparisonResults(data);
+            })
+            .catch(error => {
+              showError(error.message);
+            })
+            .finally(() => {
+              document.querySelector('.loading').style.display = 'none';
+            });
+  }
+
+  function displayComparisonResults(data) {
+    const resultDiv = document.getElementById('compareResult');
+    resultDiv.innerHTML = '';
+
+    if (data.length === 0) {
+      resultDiv.innerHTML = `
+                    <div class="text-center py-8">
+                        <h2 class="text-xl font-semibold text-gray-700">Aucune offre disponible</h2>
+                        <p class="text-gray-500 mt-2">Essayez de modifier vos critères de recherche</p>
+                    </div>
+                `;
+      return;
+    }
+
+    // Trier les offres par prix
+    data.sort((a, b) => a.prix - b.prix);
+
+    data.forEach((offer) => {
+      const card = document.createElement('div');
+      card.className = 'price-card bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow duration-200';
+
+      const stars = '⭐'.repeat(offer.nbEtoiles);
+
+      card.innerHTML = `
+                    <div class="flex flex-col md:flex-row justify-between items-start gap-4">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-gray-900">${offer.nomHotel} ${stars}</h3>
+                            <p class="text-gray-600 mt-1">${offer.adresse}</p>
+                            <p class="text-gray-500 mt-2">Proposé par ${offer.nomAgence}</p>
+
+                            <div class="mt-4">
+                                <p class="text-sm text-gray-600">
+                                    <span class="font-medium">Lits disponibles:</span> ${offer.nbLitsDisponibles}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col items-end">
+                            <div class="text-2xl font-bold text-blue-600">
+                                ${offer.prix}€
+                            </div>
+                            ${offer.pourcentageReduction > 0 ? `
+                                <div class="bg-green-100 text-green-800 text-sm font-semibold px-2 py-1 rounded mt-2">
+                                    -${offer.pourcentageReduction}% de réduction
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+
+      resultDiv.appendChild(card);
+    });
+  }
+
+  // Initialiser la date minimale pour le champ dateDebut
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('dateDebut').min = today;
+  document.getElementById('dateFin').min = today;
+
+  // Mettre à jour la date minimale de fin quand la date de début change
+  document.getElementById('dateDebut').addEventListener('change', function() {
+    document.getElementById('dateFin').min = this.value;
+  });
+</script>
+</body>
+</html>
