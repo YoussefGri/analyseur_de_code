@@ -3,38 +3,40 @@ package analyseurdecode.visitors;
 import analyseurdecode.model.ClassInfo;
 import analyseurdecode.model.MethodInfo;
 import analyseurdecode.model.AttributeInfo;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
+import org.eclipse.jdt.core.dom.*;
 
-public class ClassVisitor extends VoidVisitorAdapter<ClassInfo> {
+public class ClassVisitor extends ASTVisitor {
+    private final CompilationUnit cu;
+    private final ClassInfo collector;
+
+    public ClassVisitor(CompilationUnit cu, ClassInfo collector) {
+        this.cu = cu;
+        this.collector = collector;
+    }
 
     @Override
-    public void visit(ClassOrInterfaceDeclaration c, ClassInfo collector) {
-        super.visit(c, collector);
-
-        collector.setName(c.getNameAsString());
-        collector.setPackageName(
-            c.findCompilationUnit()
-             .flatMap(cu -> cu.getPackageDeclaration())
-             .map(pd -> pd.getNameAsString())
-             .orElse("")
-        );
+    public boolean visit(TypeDeclaration node) {
+        collector.setName(node.getName().getIdentifier());
+        PackageDeclaration pkg = cu.getPackage();
+        collector.setPackageName(pkg != null ? pkg.getName().getFullyQualifiedName() : "");
 
         // Attributs
-        c.getFields().forEach(f ->
-            f.getVariables().forEach(v ->
-                collector.addAttribute(new AttributeInfo(v.getNameAsString()))
-            )
-        );
+        for (FieldDeclaration field : node.getFields()) {
+            for (Object fragObj : field.fragments()) {
+                VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;
+                collector.addAttribute(new AttributeInfo(frag.getName().getIdentifier()));
+            }
+        }
 
         // Méthodes
-        c.getMethods().forEach(m -> {
-            int loc = m.getEnd().map(e -> e.line - m.getBegin().get().line + 1).orElse(0);
-            int params = m.getParameters().size();
-            collector.addMethod(new MethodInfo(m.getNameAsString(), loc, params));
-        });
+        for (MethodDeclaration method : node.getMethods()) {
+            int loc = cu.getLineNumber(method.getStartPosition() + method.getLength()) - cu.getLineNumber(method.getStartPosition()) + 1;
+            int params = method.parameters().size();
+            collector.addMethod(new MethodInfo(method.getName().getIdentifier(), loc, params));
+        }
 
-        int classLoc = c.getEnd().map(e -> e.line - c.getBegin().get().line + 1).orElse(0);
+        int classLoc = cu.getLineNumber(node.getStartPosition() + node.getLength()) - cu.getLineNumber(node.getStartPosition()) + 1;
         collector.setLoc(classLoc);
+        return false; // Don't visit children
     }
 }

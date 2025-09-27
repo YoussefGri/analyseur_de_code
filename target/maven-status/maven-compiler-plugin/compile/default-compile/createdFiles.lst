@@ -1,6 +1,8 @@
-analyseurdecode/Informationdeclasse.class
-analyseurdecode/ASTVIEWER.class
+analyseurdecode/ui/CliApp.class
+analyseurdecode/model/AttributeInfo.class
 analyseurdecode/Main.class
-analyseurdecode/Analyseur.class
-analyseurdecode/Informationdemethode.class
-analyseurdecode/Calculateurdestatis.class
+analyseurdecode/model/MethodInfo.class
+analyseurdecode/model/ClassInfo.class
+analyseurdecode/visitors/ClassVisitor.class
+analyseurdecode/parser/SourceParser.class
+analyseurdecode/processor/StatisticsProcessor.class
