@@ -37,6 +37,6 @@ public class ClassVisitor extends ASTVisitor {
 
         int classLoc = cu.getLineNumber(node.getStartPosition() + node.getLength()) - cu.getLineNumber(node.getStartPosition()) + 1;
         collector.setLoc(classLoc);
-        return false; // Don't visit children
+        return false;
     }
 }
