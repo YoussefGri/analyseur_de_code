@@ -5,7 +5,10 @@
     <option name="originalFiles">
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
+<<<<<<< HEAD
         <option value="$PROJECT_DIR$/../../../Évolution et restructuration des logiciels/TP2/analyseur_de_code-TP2/pom.xml" />
+=======
+>>>>>>> origin/TP2
       </list>
     </option>
   </component>
