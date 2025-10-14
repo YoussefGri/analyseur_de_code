@@ -44,6 +44,14 @@ public class CliApp {
 
 		new StatisticsProcessor().computeStatistics(classes, X);
 
+		// Interaction utilisateur pour le couplage
+		java.util.Scanner scanner = new java.util.Scanner(System.in);
+		System.out.print("Entrez le nom de la première classe pour le couplage : ");
+		String classA = scanner.nextLine().trim();
+		System.out.print("Entrez le nom de la seconde classe pour le couplage : ");
+		String classB = scanner.nextLine().trim();
+		new StatisticsProcessor().printCouplingMetric(classes, classA, classB);
+
 		displayCallGraph(classes, allMethodsMap);
 	}
 

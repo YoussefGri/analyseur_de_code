@@ -45,6 +45,9 @@ public class AnalyseurGUI extends JFrame {
     private List<File> listAllJavaFiles = new ArrayList<>();
     private Map<String, MethodInfo> allMethodsMap;
 
+    // Stocke la dernière liste de classes analysées
+    private List<ClassInfo> lastAnalyzedClasses = null;
+
     public AnalyseurGUI() {
         setTitle("Analyseur de Code Java - Orienté Objet");
         setSize(1200, 800);
@@ -145,8 +148,59 @@ public class AnalyseurGUI extends JFrame {
         paramsPanel.add(Box.createHorizontalStrut(20));
         paramsPanel.add(analyzeButton);
 
+        // Checkbox pour afficher le calcul de couplage
+        JCheckBox showCouplingCheckBox = new JCheckBox("Afficher le calcul de couplage entre deux classes");
+        showCouplingCheckBox.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        showCouplingCheckBox.setBackground(CARD_COLOR);
+        showCouplingCheckBox.setForeground(TEXT_COLOR);
+
+        // Panneau de couplage (masqué par défaut)
+        JPanel couplingPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        couplingPanel.setBackground(CARD_COLOR);
+        couplingPanel.setVisible(false);
+        JLabel couplingLabel = new JLabel("Couplage entre deux classes :");
+        couplingLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        couplingLabel.setForeground(TEXT_COLOR);
+        JTextField classAField = new JTextField(15);
+        classAField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        JTextField classBField = new JTextField(15);
+        classBField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        JButton couplingButton = createStyledButton("Calculer le couplage", ACCENT_COLOR);
+        JLabel couplingResultLabel = new JLabel("");
+        couplingResultLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        couplingResultLabel.setForeground(PRIMARY_COLOR);
+        couplingButton.addActionListener(e -> {
+            String classA = classAField.getText().trim();
+            String classB = classBField.getText().trim();
+            if (classA.isEmpty() || classB.isEmpty()) {
+                couplingResultLabel.setText("Veuillez saisir les deux noms de classes.");
+                return;
+            }
+            List<ClassInfo> classes = getLastAnalyzedClasses();
+            System.out.println("[createControlPanel - AnalyseurGUI] : " + classes);
+            if (classes == null) {
+                couplingResultLabel.setText("Veuillez d'abord lancer l'analyse.");
+                return;
+            }
+            double coupling = new analyseurdecode.processor.StatisticsService().computeCouplingMetric(classes, classA, classB);
+            couplingResultLabel.setText("Couplage entre " + classA + " et " + classB + " : " + coupling);
+            System.out.println("Couplage entre " + classA + " et " + classB + " : " + coupling);
+        });
+        couplingPanel.add(couplingLabel);
+        couplingPanel.add(classAField);
+        couplingPanel.add(classBField);
+        couplingPanel.add(couplingButton);
+        couplingPanel.add(couplingResultLabel);
+
+        // Gestion de la visibilité du panneau de couplage
+        showCouplingCheckBox.addActionListener(e -> {
+            couplingPanel.setVisible(showCouplingCheckBox.isSelected());
+        });
+
         panel.add(folderPanel);
         panel.add(paramsPanel);
+        panel.add(showCouplingCheckBox);
+        panel.add(couplingPanel);
 
         return panel;
     }
@@ -250,6 +304,11 @@ public class AnalyseurGUI extends JFrame {
         tabbedPane.addTab("Accueil", welcomePanel);
     }
 
+    // Permet d'accéder à la dernière analyse
+    public List<ClassInfo> getLastAnalyzedClasses() {
+        return lastAnalyzedClasses;
+    }
+
     private void runAnalysis() {
         String folderPath = folderField.getText().trim();
         int X;
@@ -334,7 +393,8 @@ public class AnalyseurGUI extends JFrame {
             @Override
             protected void done() {
                 try {
-                    List<ClassInfo> classes = (List<ClassInfo>) get();
+                    List<ClassInfo> classes = get();
+                    lastAnalyzedClasses = classes;
                     showStatistics(classes, X);
                     statusLabel.setText("Analyse terminée - " + classes.size() + " classes analysées");
                 } catch (Exception ex) {

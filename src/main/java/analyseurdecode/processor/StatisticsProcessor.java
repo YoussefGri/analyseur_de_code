@@ -21,4 +21,10 @@ public class StatisticsProcessor {
         System.out.println("Classes dans les deux catégories : " + result.bothCategories);
         System.out.println("Classes avec plus de " + X + " méthodes : " + result.classesMoreThanX);
     }
+
+    public void printCouplingMetric(List<ClassInfo> classes, String classA, String classB) {
+        StatisticsService service = new StatisticsService();
+        double coupling = service.computeCouplingMetric(classes, classA, classB);
+        System.out.println("Couplage entre " + classA + " et " + classB + " : " + coupling);
+    }
 }

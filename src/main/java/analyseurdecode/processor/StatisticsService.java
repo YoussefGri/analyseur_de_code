@@ -1,5 +1,6 @@
 package analyseurdecode.processor;
 
+import analyseurdecode.model.AttributeInfo;
 import analyseurdecode.model.ClassInfo;
 import analyseurdecode.model.MethodInfo;
 import java.util.ArrayList;
@@ -36,5 +37,84 @@ public class StatisticsService {
             .filter(c -> c.getMethods().size() > X)
             .collect(Collectors.toList());
         return result;
+    }
+
+    public double computeCouplingMetric(List<ClassInfo> classes, String classA, String classB) {
+        int abRelationships = 0;
+        int totalRelationships = 0;
+        java.util.Map<String, String> methodToClass = new java.util.HashMap<>();
+        java.util.Set<String> classNames = new java.util.HashSet<>();
+        for (ClassInfo ci : classes) {
+            classNames.add(ci.getName());
+            for (MethodInfo mi : ci.getMethods()) {
+                methodToClass.put(ci.getName() + "." + mi.getName(), ci.getName());
+            }
+        }
+        // Couplage via les attributs
+        for (ClassInfo ci : classes) {
+            String sourceClass = ci.getName();
+            for (AttributeInfo attr : ci.getAttributes()) {
+                String targetClass = attr.getType();
+                if (classNames.contains(targetClass) && !sourceClass.equals(targetClass)) {
+                    totalRelationships++;
+                    if ((sourceClass.equals(classA) && targetClass.equals(classB)) ||
+                        (sourceClass.equals(classB) && targetClass.equals(classA))) {
+                        abRelationships++;
+                    }
+                }
+            }
+        }
+        // Couplage via les appels de méthodes
+        for (ClassInfo ci : classes) {
+            for (MethodInfo mi : ci.getMethods()) {
+                String sourceClass = ci.getName();
+                for (String called : mi.getCalledMethodsNames()) {
+                    String targetClass = null;
+                    if (called.startsWith("COUPLING:")) {
+                        targetClass = called.substring("COUPLING:".length());
+                        if (!classNames.contains(targetClass)) continue;
+                    } else {
+                        targetClass = methodToClass.getOrDefault(called, null);
+                    }
+                    if (targetClass != null && !sourceClass.equals(targetClass)) {
+                        totalRelationships++;
+                        if ((sourceClass.equals(classA) && targetClass.equals(classB)) ||
+                            (sourceClass.equals(classB) && targetClass.equals(classA))) {
+                            abRelationships++;
+                        }
+                    }
+                }
+            }
+        }
+        // Couplage via les paramètres de méthodes
+        for (ClassInfo ci : classes) {
+            String sourceClass = ci.getName();
+            for (MethodInfo mi : ci.getMethods()) {
+                for (String paramType : mi.getParameterTypes()) {
+                    // Type direct
+                    if (classNames.contains(paramType) && !sourceClass.equals(paramType)) {
+                        totalRelationships++;
+                        if ((sourceClass.equals(classA) && paramType.equals(classB)) ||
+                            (sourceClass.equals(classB) && paramType.equals(classA))) {
+                            abRelationships++;
+                        }
+                    }
+                    // Type générique (ex : List<Shape>)
+                    if (paramType.contains("<") && paramType.contains(">")) {
+                        String genericType = paramType.substring(paramType.indexOf('<')+1, paramType.indexOf('>')).trim();
+                        if (classNames.contains(genericType) && !sourceClass.equals(genericType)) {
+                            totalRelationships++;
+                            if ((sourceClass.equals(classA) && genericType.equals(classB)) ||
+                                (sourceClass.equals(classB) && genericType.equals(classA))) {
+                                abRelationships++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (totalRelationships == 0) return 0.0;
+        double ratio = (double) abRelationships / totalRelationships;
+        return Math.round(ratio * 1000.0) / 1000.0;
     }
 }
