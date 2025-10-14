@@ -666,14 +666,16 @@ public class AnalyseurGUI extends JFrame {
         JToggleButton textButton = new JToggleButton("Textuel");
         JToggleButton treeButton = new JToggleButton("Arborescent");
         JToggleButton graphButton = new JToggleButton("Graphique");
+        JToggleButton dendrogramButton = new JToggleButton("Dendrogramme");
 
         ButtonGroup group = new ButtonGroup();
         group.add(textButton);
         group.add(treeButton);
         group.add(graphButton);
+        group.add(dendrogramButton);
         textButton.setSelected(true);
 
-        for (JToggleButton btn : new JToggleButton[]{textButton, treeButton, graphButton}) {
+        for (JToggleButton btn : new JToggleButton[]{textButton, treeButton, graphButton, dendrogramButton}) {
             btn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
             btn.setFocusPainted(false);
             btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -683,6 +685,7 @@ public class AnalyseurGUI extends JFrame {
         controlPanel.add(textButton);
         controlPanel.add(treeButton);
         controlPanel.add(graphButton);
+        controlPanel.add(dendrogramButton);
 
         CardLayout cardLayout = new CardLayout();
         JPanel displayPanel = new JPanel(cardLayout);
@@ -697,9 +700,13 @@ public class AnalyseurGUI extends JFrame {
         JComponent graphDisplay = new CallGraphPanel(classes, allMethodsMap);
         displayPanel.add(graphDisplay, "GRAPH");
 
+        JComponent dendrogramDisplay = createDendrogramPanel(classes);
+        displayPanel.add(dendrogramDisplay, "DENDRO");
+
         textButton.addActionListener(e -> cardLayout.show(displayPanel, "TEXT"));
         treeButton.addActionListener(e -> cardLayout.show(displayPanel, "TREE"));
         graphButton.addActionListener(e -> cardLayout.show(displayPanel, "GRAPH"));
+        dendrogramButton.addActionListener(e -> cardLayout.show(displayPanel, "DENDRO"));
 
         mainPanel.add(controlPanel, BorderLayout.NORTH);
         mainPanel.add(displayPanel, BorderLayout.CENTER);
@@ -863,6 +870,29 @@ public class AnalyseurGUI extends JFrame {
         panel.add(scrollPane, BorderLayout.CENTER);
         panel.add(infoPanel, BorderLayout.SOUTH);
 
+        return panel;
+    }
+
+    private JPanel createDendrogramPanel(List<ClassInfo> classes) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BACKGROUND_COLOR);
+        if (classes == null || classes.isEmpty()) {
+            panel.add(new JLabel("Aucune analyse disponible. Lancez l'analyse d'abord."), BorderLayout.CENTER);
+            return panel;
+        }
+        try {
+            analyseurdecode.processor.HierarchicalClusteringProcessor processor = new analyseurdecode.processor.HierarchicalClusteringProcessor(classes);
+            analyseurdecode.processor.DendrogramNode root = processor.cluster();
+            if (root == null) {
+                panel.add(new JLabel("Impossible de générer le dendrogramme."), BorderLayout.CENTER);
+            } else {
+                JScrollPane scrollPane = new JScrollPane(new analyseurdecode.ui.DendrogramPanel(root));
+                scrollPane.setBorder(BorderFactory.createLineBorder(new Color(189, 195, 199), 1));
+                panel.add(scrollPane, BorderLayout.CENTER);
+            }
+        } catch (Exception ex) {
+            panel.add(new JLabel("Erreur lors du calcul du dendrogramme : " + ex.getMessage()), BorderLayout.CENTER);
+        }
         return panel;
     }
 
