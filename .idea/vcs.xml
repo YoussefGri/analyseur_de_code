@@ -2,9 +2,6 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
-<<<<<<< HEAD
     <mapping directory="$PROJECT_DIR$/../../../Évolution et restructuration des logiciels/TP2/analyseur_de_code-TP2" vcs="Git" />
-=======
->>>>>>> origin/TP2
   </component>
 </project>

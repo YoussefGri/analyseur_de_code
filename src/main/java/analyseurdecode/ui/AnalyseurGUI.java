@@ -2,9 +2,9 @@ package analyseurdecode.ui;
 
 import analyseurdecode.model.ClassInfo;
 import analyseurdecode.model.MethodInfo;
+import analyseurdecode.model.Module;
 import analyseurdecode.parser.SourceParser;
-import analyseurdecode.processor.StatisticsResult;
-import analyseurdecode.processor.StatisticsService;
+import analyseurdecode.processor.*;
 import analyseurdecode.visitors.ClassVisitor;
 import analyseurdecode.visitors.CallGraphVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -18,10 +18,8 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import java.awt.*;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AnalyseurGUI extends JFrame {
@@ -287,7 +285,9 @@ public class AnalyseurGUI extends JFrame {
                         "  - Un résumé statistique complet\n" +
                         "  - Le classement des classes par méthodes et attributs\n" +
                         "  - Une vue arborescente de la structure du code\n" +
-                        "  - Le graphe d'appel des méthodes (relations d'appel)"
+                        "  - Le graphe d'appel des méthodes (relations d'appel)\n"+
+                        "  - Le graphe de Couplage : Couplage entre classes (textuel/matrice)\n" +
+                        "  - Modules : Identification automatique avec seuil CP"
         );
         instructionsArea.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         instructionsArea.setForeground(TEXT_COLOR);
@@ -934,7 +934,11 @@ private JComponent createMatrixCouplingGraph(List<ClassInfo> classes) {
 
         return panel;
     }
+    // ========================================================================
+// AJOUT DANS AnalyseurGUI.java - VERSION GRAPHIQUE AMÉLIORÉE
+// ========================================================================
 
+    // 1. Dans la méthode createCallGraphPanel(), ajouter un bouton "Modules":
     private JPanel createCallGraphPanel(List<ClassInfo> classes) {
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(BACKGROUND_COLOR);
@@ -954,15 +958,17 @@ private JComponent createMatrixCouplingGraph(List<ClassInfo> classes) {
         JToggleButton treeButton = new JToggleButton("Arborescent");
         JToggleButton graphButton = new JToggleButton("Graphique");
         JToggleButton dendrogramButton = new JToggleButton("Dendrogramme");
+        JToggleButton modulesButton = new JToggleButton("Modules"); // NOUVEAU
 
         ButtonGroup group = new ButtonGroup();
         group.add(textButton);
         group.add(treeButton);
         group.add(graphButton);
         group.add(dendrogramButton);
+        group.add(modulesButton); // NOUVEAU
         textButton.setSelected(true);
 
-        for (JToggleButton btn : new JToggleButton[]{textButton, treeButton, graphButton,dendrogramButton}) {
+        for (JToggleButton btn : new JToggleButton[]{textButton, treeButton, graphButton, dendrogramButton, modulesButton}) {
             btn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
             btn.setFocusPainted(false);
             btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -973,6 +979,7 @@ private JComponent createMatrixCouplingGraph(List<ClassInfo> classes) {
         controlPanel.add(treeButton);
         controlPanel.add(graphButton);
         controlPanel.add(dendrogramButton);
+        controlPanel.add(modulesButton); // NOUVEAU
 
         CardLayout cardLayout = new CardLayout();
         JPanel displayPanel = new JPanel(cardLayout);
@@ -990,15 +997,347 @@ private JComponent createMatrixCouplingGraph(List<ClassInfo> classes) {
         JComponent dendrogramDisplay = createDendrogramPanel(classes);
         displayPanel.add(dendrogramDisplay, "DENDRO");
 
+        // NOUVEAU
+        JComponent modulesDisplay = createModulesPanel(classes);
+        displayPanel.add(modulesDisplay, "MODULES");
+
         textButton.addActionListener(e -> cardLayout.show(displayPanel, "TEXT"));
         treeButton.addActionListener(e -> cardLayout.show(displayPanel, "TREE"));
         graphButton.addActionListener(e -> cardLayout.show(displayPanel, "GRAPH"));
         dendrogramButton.addActionListener(e -> cardLayout.show(displayPanel, "DENDRO"));
+        modulesButton.addActionListener(e -> cardLayout.show(displayPanel, "MODULES")); // NOUVEAU
 
         mainPanel.add(controlPanel, BorderLayout.NORTH);
         mainPanel.add(displayPanel, BorderLayout.CENTER);
 
         return mainPanel;
+    }
+
+    // 2. Ajouter la méthode createModulesPanel() avec affichage graphique:
+    private JPanel createModulesPanel(List<ClassInfo> classes) {
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(BACKGROUND_COLOR);
+
+        if (classes == null || classes.isEmpty()) {
+            mainPanel.add(new JLabel("Aucune analyse disponible. Lancez l'analyse d'abord."), BorderLayout.CENTER);
+            return mainPanel;
+        }
+
+        // Panneau de contrôle pour les paramètres
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        controlPanel.setBackground(CARD_COLOR);
+        controlPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(189, 195, 199)),
+                BorderFactory.createEmptyBorder(10, 15, 10, 15)
+        ));
+
+        JLabel cpLabel = new JLabel("Seuil de couplage (CP) :");
+        cpLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        cpLabel.setForeground(TEXT_COLOR);
+
+        JTextField cpField = new JTextField("0.01", 8);
+        cpField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+
+        JButton identifyButton = createStyledButton("Identifier les modules", ACCENT_COLOR);
+
+        controlPanel.add(cpLabel);
+        controlPanel.add(cpField);
+        controlPanel.add(Box.createHorizontalStrut(10));
+        controlPanel.add(identifyButton);
+
+        // Zone d'affichage des modules (GridLayout dynamique)
+        JPanel modulesDisplayPanel = new JPanel();
+        modulesDisplayPanel.setLayout(new BoxLayout(modulesDisplayPanel, BoxLayout.Y_AXIS));
+        modulesDisplayPanel.setBackground(BACKGROUND_COLOR);
+        modulesDisplayPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+        // Message initial
+        JLabel initialMessage = new JLabel("<html><div style='text-align: center; padding: 50px;'>" +
+                "<h2 style='color: #2980b9;'>Identification de Modules</h2>" +
+                "<p style='margin-top: 20px;'>Cliquez sur 'Identifier les modules' pour lancer l'analyse.</p>" +
+                "<p style='margin-top: 10px; color: #7f8c8d;'>Le seuil de couplage (CP) détermine la force minimale du couplage<br>" +
+                "entre les classes d'un même module.</p>" +
+                "<br><b>Valeurs suggérées:</b><br>" +
+                "CP = 0.01 : modules très larges (couplage faible accepté)<br>" +
+                "CP = 0.05 : modules moyens<br>" +
+                "CP = 0.10 : modules compacts (couplage fort requis)" +
+                "</div></html>");
+        initialMessage.setHorizontalAlignment(JLabel.CENTER);
+        modulesDisplayPanel.add(initialMessage);
+
+        JScrollPane scrollPane = new JScrollPane(modulesDisplayPanel);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        // Action du bouton
+        identifyButton.addActionListener(e -> {
+            try {
+                double cp = Double.parseDouble(cpField.getText().trim());
+                if (cp < 0 || cp > 1) {
+                    throw new NumberFormatException();
+                }
+
+                modulesDisplayPanel.removeAll();
+                JLabel loadingLabel = new JLabel("Identification des modules en cours...");
+                loadingLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+                loadingLabel.setForeground(PRIMARY_COLOR);
+                loadingLabel.setHorizontalAlignment(JLabel.CENTER);
+                modulesDisplayPanel.add(loadingLabel);
+                modulesDisplayPanel.revalidate();
+                modulesDisplayPanel.repaint();
+
+                SwingWorker<List<Module>, Void> worker = new SwingWorker<List<Module>, Void>() {
+                    @Override
+                    protected List<Module> doInBackground() throws Exception {
+                        // Générer le dendrogramme
+                        HierarchicalClusteringProcessor clusteringProcessor =
+                                new HierarchicalClusteringProcessor(classes);
+                        DendrogramNode root = clusteringProcessor.cluster();
+
+                        if (root == null) {
+                            throw new Exception("Impossible de générer le dendrogramme");
+                        }
+
+                        // Identifier les modules
+                        ModuleIdentifier identifier = new ModuleIdentifier(classes, cp);
+                        return identifier.identifyModules(root);
+                    }
+
+                    @Override
+                    protected void done() {
+                        try {
+                            List<Module> modules = get();
+                            modulesDisplayPanel.removeAll();
+
+                            if (modules.isEmpty()) {
+                                JPanel errorPanel = createErrorPanel(cp);
+                                modulesDisplayPanel.add(errorPanel);
+                            } else {
+                                // Créer l'affichage graphique des modules
+                                displayModulesGraphically(modulesDisplayPanel, modules, classes);
+                            }
+
+                            modulesDisplayPanel.revalidate();
+                            modulesDisplayPanel.repaint();
+                        } catch (Exception ex) {
+                            modulesDisplayPanel.removeAll();
+                            JLabel errorLabel = new JLabel("<html><div style='text-align: center; color: #e74c3c;'>" +
+                                    "<h3>Erreur lors de l'identification</h3>" +
+                                    "<p>" + ex.getMessage() + "</p></div></html>");
+                            errorLabel.setHorizontalAlignment(JLabel.CENTER);
+                            modulesDisplayPanel.add(errorLabel);
+                            modulesDisplayPanel.revalidate();
+                            modulesDisplayPanel.repaint();
+                        }
+                    }
+                };
+
+                worker.execute();
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(mainPanel,
+                        "Le seuil de couplage doit être un nombre entre 0 et 1.",
+                        "Erreur de saisie",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        mainPanel.add(controlPanel, BorderLayout.NORTH);
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+
+        return mainPanel;
+    }
+
+    // 3. Ajouter la méthode pour afficher les modules graphiquement:
+    private void displayModulesGraphically(JPanel container, List<Module> modules, List<ClassInfo> allClasses) {
+        // Statistiques en haut
+        JPanel statsPanel = createModuleStatsPanel(modules, allClasses);
+        container.add(statsPanel);
+        container.add(Box.createVerticalStrut(20));
+
+        // Couleurs pour les modules
+        Color[] moduleColors = {
+                new Color(52, 152, 219),   // Bleu
+                new Color(46, 204, 113),   // Vert
+                new Color(155, 89, 182),   // Violet
+                new Color(241, 196, 15),   // Jaune
+                new Color(230, 126, 34),   // Orange
+                new Color(231, 76, 60),    // Rouge
+                new Color(26, 188, 156),   // Turquoise
+                new Color(52, 73, 94)      // Gris foncé
+        };
+
+        // Afficher chaque module comme une carte
+        for (int i = 0; i < modules.size(); i++) {
+            Module module = modules.get(i);
+            Color moduleColor = moduleColors[i % moduleColors.length];
+
+            JPanel moduleCard = createModuleCard(module, i + 1, moduleColor, allClasses);
+            container.add(moduleCard);
+            container.add(Box.createVerticalStrut(15));
+        }
+    }
+
+    // 4. Créer une carte pour un module:
+    private JPanel createModuleCard(Module module, int moduleNumber, Color themeColor, List<ClassInfo> allClasses) {
+        JPanel card = new JPanel();
+        card.setLayout(new BorderLayout(10, 10));
+        card.setBackground(CARD_COLOR);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(themeColor, 2),
+                BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
+
+        // En-tête du module
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(themeColor);
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+
+        JLabel titleLabel = new JLabel("MODULE " + moduleNumber);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setForeground(Color.WHITE);
+
+        JLabel couplingLabel = new JLabel(String.format("Couplage: %.4f", module.getCouplingScore()));
+        couplingLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        couplingLabel.setForeground(Color.WHITE);
+
+        headerPanel.add(titleLabel, BorderLayout.WEST);
+        headerPanel.add(couplingLabel, BorderLayout.EAST);
+
+        // Corps du module - Grille de classes
+        JPanel bodyPanel = new JPanel();
+        bodyPanel.setLayout(new BoxLayout(bodyPanel, BoxLayout.Y_AXIS));
+        bodyPanel.setBackground(CARD_COLOR);
+        bodyPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+
+        JLabel classCountLabel = new JLabel("Classes (" + module.getClassNames().size() + "):");
+        classCountLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        classCountLabel.setForeground(TEXT_COLOR);
+        classCountLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        bodyPanel.add(classCountLabel);
+        bodyPanel.add(Box.createVerticalStrut(8));
+
+        // Grille de classes
+        JPanel classesGrid = new JPanel(new GridLayout(0, 3, 10, 10));
+        classesGrid.setBackground(CARD_COLOR);
+        classesGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        for (String className : module.getClassNames()) {
+            JPanel classBox = createClassBox(className, themeColor, allClasses);
+            classesGrid.add(classBox);
+        }
+
+        bodyPanel.add(classesGrid);
+
+        card.add(headerPanel, BorderLayout.NORTH);
+        card.add(bodyPanel, BorderLayout.CENTER);
+
+        return card;
+    }
+
+    // 5. Créer une boîte pour une classe:
+    private JPanel createClassBox(String className, Color themeColor, List<ClassInfo> allClasses) {
+        JPanel box = new JPanel();
+        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
+        box.setBackground(new Color(236, 240, 241));
+        box.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(themeColor.darker(), 1),
+                BorderFactory.createEmptyBorder(8, 10, 8, 10)
+        ));
+
+        JLabel nameLabel = new JLabel(className);
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        nameLabel.setForeground(themeColor.darker());
+        nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Trouver les infos de la classe
+        ClassInfo classInfo = allClasses.stream()
+                .filter(c -> c.getName().equals(className))
+                .findFirst()
+                .orElse(null);
+
+        if (classInfo != null) {
+            JLabel methodsLabel = new JLabel(  classInfo.getMethods().size() + " méthodes");
+            methodsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+            methodsLabel.setForeground(LIGHT_TEXT);
+            methodsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            JLabel attrsLabel = new JLabel( classInfo.getAttributes().size() + " attributs");
+            attrsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+            attrsLabel.setForeground(LIGHT_TEXT);
+            attrsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            box.add(nameLabel);
+            box.add(Box.createVerticalStrut(5));
+            box.add(methodsLabel);
+            box.add(attrsLabel);
+        } else {
+            box.add(nameLabel);
+        }
+
+        return box;
+    }
+
+    // 6. Créer le panneau de statistiques:
+    private JPanel createModuleStatsPanel(List<Module> modules, List<ClassInfo> allClasses) {
+        JPanel statsPanel = new JPanel(new GridLayout(1, 4, 15, 0));
+        statsPanel.setBackground(BACKGROUND_COLOR);
+        statsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
+
+        Set<String> coveredClasses = new HashSet<>();
+        for (Module module : modules) {
+            coveredClasses.addAll(module.getClassNames());
+        }
+
+        double avgModuleSize = modules.stream()
+                .mapToInt(Module::size)
+                .average()
+                .orElse(0.0);
+
+        double avgCoupling = modules.stream()
+                .mapToDouble(Module::getCouplingScore)
+                .average()
+                .orElse(0.0);
+
+        double coverage = (coveredClasses.size() * 100.0) / allClasses.size();
+
+        statsPanel.add(createStatCard("Modules identifiés", String.valueOf(modules.size()), "Nombre total de modules"));
+        statsPanel.add(createStatCard("Couverture", String.format("%.1f%%", coverage), "Classes dans des modules"));
+        statsPanel.add(createStatCard("Taille moyenne", String.format("%.1f", avgModuleSize), "Classes par module"));
+        statsPanel.add(createStatCard("Couplage moyen", String.format("%.4f", avgCoupling), "Force de cohésion"));
+
+        return statsPanel;
+    }
+
+    // 7. Créer le panneau d'erreur:
+    private JPanel createErrorPanel(double cp) {
+        JPanel errorPanel = new JPanel();
+        errorPanel.setLayout(new BoxLayout(errorPanel, BoxLayout.Y_AXIS));
+        errorPanel.setBackground(BACKGROUND_COLOR);
+        errorPanel.setBorder(BorderFactory.createEmptyBorder(50, 50, 50, 50));
+
+        JLabel titleLabel = new JLabel("Aucun module identifié");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLabel.setForeground(new Color(231, 76, 60));
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel messageLabel = new JLabel("<html><div style='text-align: center; margin-top: 20px;'>" +
+                "Aucun module ne satisfait les contraintes avec CP = " + cp + "<br><br>" +
+                "<b>Suggestions:</b><br>" +
+                "• Réduire le seuil de couplage (CP)<br>" +
+                "• Vérifier que les classes ont des relations d'appel<br>" +
+                "• Essayer CP = 0.001 pour des modules plus larges" +
+                "</div></html>");
+        messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        messageLabel.setForeground(TEXT_COLOR);
+        messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        errorPanel.add(titleLabel);
+        errorPanel.add(Box.createVerticalStrut(15));
+        errorPanel.add(messageLabel);
+
+        return errorPanel;
     }
 
 

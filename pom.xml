@@ -20,6 +20,15 @@
       <artifactId>jgraphx</artifactId>
       <version>4.2.2</version>
     </dependency>
+
+    <!-- Spoon Core -->
+    <dependency>
+      <groupId>fr.inria.gforge.spoon</groupId>
+      <artifactId>spoon-core</artifactId>
+      <version>10.4.2</version>
+    </dependency>
+
+
   </dependencies>
 
   <repositories>
