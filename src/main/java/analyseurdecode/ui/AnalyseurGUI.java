@@ -466,6 +466,10 @@ public class AnalyseurGUI extends JFrame {
         JPanel callGraphPanel = createCallGraphPanel(classes);
         tabbedPane.addTab("Graphe d'Appel", callGraphPanel);
 
+        // Onglet Dendrogramme (séparé) avec bascule Graphe / Modules
+        JPanel dendrogramTab = createDendrogramTabPanel(classes);
+        tabbedPane.addTab("Dendrogramme", dendrogramTab);
+
         // Onglet Graphe de Couplage
         JPanel couplingGraphPanel = createCouplingGraphPanel(classes);
         tabbedPane.addTab("Graphe de Couplage", couplingGraphPanel);
@@ -957,18 +961,14 @@ private JComponent createMatrixCouplingGraph(List<ClassInfo> classes) {
         JToggleButton textButton = new JToggleButton("Textuel");
         JToggleButton treeButton = new JToggleButton("Arborescent");
         JToggleButton graphButton = new JToggleButton("Graphique");
-        JToggleButton dendrogramButton = new JToggleButton("Dendrogramme");
-        JToggleButton modulesButton = new JToggleButton("Modules"); // NOUVEAU
 
         ButtonGroup group = new ButtonGroup();
         group.add(textButton);
         group.add(treeButton);
         group.add(graphButton);
-        group.add(dendrogramButton);
-        group.add(modulesButton); // NOUVEAU
         textButton.setSelected(true);
 
-        for (JToggleButton btn : new JToggleButton[]{textButton, treeButton, graphButton, dendrogramButton, modulesButton}) {
+        for (JToggleButton btn : new JToggleButton[]{textButton, treeButton, graphButton}) {
             btn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
             btn.setFocusPainted(false);
             btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -978,9 +978,8 @@ private JComponent createMatrixCouplingGraph(List<ClassInfo> classes) {
         controlPanel.add(textButton);
         controlPanel.add(treeButton);
         controlPanel.add(graphButton);
-        controlPanel.add(dendrogramButton);
-        controlPanel.add(modulesButton); // NOUVEAU
 
+        // CardLayout pour basculer entre les différentes vues
         CardLayout cardLayout = new CardLayout();
         JPanel displayPanel = new JPanel(cardLayout);
         displayPanel.setBackground(BACKGROUND_COLOR);
@@ -994,18 +993,9 @@ private JComponent createMatrixCouplingGraph(List<ClassInfo> classes) {
         JComponent graphDisplay = new CallGraphPanel(classes, allMethodsMap);
         displayPanel.add(graphDisplay, "GRAPH");
 
-        JComponent dendrogramDisplay = createDendrogramPanel(classes);
-        displayPanel.add(dendrogramDisplay, "DENDRO");
-
-        // NOUVEAU
-        JComponent modulesDisplay = createModulesPanel(classes);
-        displayPanel.add(modulesDisplay, "MODULES");
-
         textButton.addActionListener(e -> cardLayout.show(displayPanel, "TEXT"));
         treeButton.addActionListener(e -> cardLayout.show(displayPanel, "TREE"));
         graphButton.addActionListener(e -> cardLayout.show(displayPanel, "GRAPH"));
-        dendrogramButton.addActionListener(e -> cardLayout.show(displayPanel, "DENDRO"));
-        modulesButton.addActionListener(e -> cardLayout.show(displayPanel, "MODULES")); // NOUVEAU
 
         mainPanel.add(controlPanel, BorderLayout.NORTH);
         mainPanel.add(displayPanel, BorderLayout.CENTER);
@@ -1013,7 +1003,61 @@ private JComponent createMatrixCouplingGraph(List<ClassInfo> classes) {
         return mainPanel;
     }
 
-    // 2. Ajouter la méthode createModulesPanel() avec affichage graphique:
+    // Onglet séparé pour le Dendrogramme qui contient deux vues: Graphe (dendrogramme) et Modules
+    private JPanel createDendrogramTabPanel(List<ClassInfo> classes) {
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(BACKGROUND_COLOR);
+
+        // Panneau de contrôle avec bascule Graphe / Modules
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        controlPanel.setBackground(CARD_COLOR);
+        controlPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(189, 195, 199)),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+
+        JLabel modeLabel = new JLabel("Affichage :");
+        modeLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        modeLabel.setForeground(TEXT_COLOR);
+
+        JToggleButton graphButton = new JToggleButton("Graphe");
+        JToggleButton modulesButton = new JToggleButton("Modules avec CP");
+        ButtonGroup group = new ButtonGroup();
+        group.add(graphButton);
+        group.add(modulesButton);
+        graphButton.setSelected(true);
+
+        for (JToggleButton btn : new JToggleButton[]{graphButton, modulesButton}) {
+            btn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+            btn.setFocusPainted(false);
+            btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        }
+
+        controlPanel.add(modeLabel);
+        controlPanel.add(graphButton);
+        controlPanel.add(modulesButton);
+
+        // CardLayout pour basculer entre Dendrogramme et Modules
+        CardLayout cardLayout = new CardLayout();
+        JPanel displayPanel = new JPanel(cardLayout);
+        displayPanel.setBackground(BACKGROUND_COLOR);
+
+        // Utiliser les méthodes existantes pour construire les vues
+        JComponent dendroView = createDendrogramPanel(classes);
+        displayPanel.add(dendroView, "GRAPH");
+
+        JComponent modulesView = createModulesPanel(classes);
+        displayPanel.add(modulesView, "MODULES");
+
+        graphButton.addActionListener(e -> cardLayout.show(displayPanel, "GRAPH"));
+        modulesButton.addActionListener(e -> cardLayout.show(displayPanel, "MODULES"));
+
+        mainPanel.add(controlPanel, BorderLayout.NORTH);
+        mainPanel.add(displayPanel, BorderLayout.CENTER);
+
+        return mainPanel;
+    }
+
     private JPanel createModulesPanel(List<ClassInfo> classes) {
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(BACKGROUND_COLOR);
