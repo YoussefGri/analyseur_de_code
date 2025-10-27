@@ -1,13 +1,9 @@
 analyseurdecode/Main.class
-analyseurdecode/ui/AnalyseurGUI.class
 analyseurdecode/processor/StatisticsProcessor.class
-analyseurdecode/visitors/CallGraphVisitor.class
-analyseurdecode/ui/CliApp.class
-analyseurdecode/model/AttributeInfo.class
 analyseurdecode/model/MethodInfo.class
 analyseurdecode/model/ClassInfo.class
-analyseurdecode/visitors/ClassVisitor.class
-analyseurdecode/processor/StatisticsService.class
 analyseurdecode/parser/SourceParser.class
-analyseurdecode/ui/CallGraphPanel.class
 analyseurdecode/processor/StatisticsResult.class
+analyseurdecode/ui/AnalyseurGUI.class
+analyseurdecode/model/AttributeInfo.class
+analyseurdecode/processor/StatisticsService.class

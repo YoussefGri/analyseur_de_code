@@ -11,8 +11,10 @@ import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
-
-// Interface graphique pour l'analyseur utilisant Spoon avec calcul de couplage
+import analyseurdecode.model.Module;
+import analyseurdecode.processor.DendrogramNode;
+import analyseurdecode.processor.HierarchicalClusteringProcessor;
+import analyseurdecode.processor.ModuleIdentifier;
 
 public class AnalyseurSpoonGUI extends JFrame {
 
@@ -30,7 +32,6 @@ public class AnalyseurSpoonGUI extends JFrame {
     private JProgressBar progressBar;
     private JLabel statusLabel;
 
-    // Données d'analyse
     private List<ClassInfo> analyzedClasses;
     private Map<String, Map<String, Double>> couplingMatrix;
     private int totalRelations;
@@ -389,6 +390,8 @@ public class AnalyseurSpoonGUI extends JFrame {
         tabbedPane.addTab("Matrice de Couplage", createCouplingMatrixPanel());
         tabbedPane.addTab("Graphe de Couplage", createCouplingGraphPanel());
         tabbedPane.addTab("Top Couplages", createTopCouplingsPanel());
+        // Nouvel onglet Dendrogramme
+        tabbedPane.addTab("Dendrogramme", createDendrogramTabPanel(analyzedClasses));
 
         tabbedPane.setSelectedIndex(1);
     }
@@ -1114,6 +1117,366 @@ public class AnalyseurSpoonGUI extends JFrame {
         return 0.0;
     }
 
+    // ===== Dendrogramme & Modules (via clustering hiérarchique) =====
+    private JPanel createDendrogramTabPanel(List<ClassInfo> classes) {
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(BACKGROUND_COLOR);
+
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        controlPanel.setBackground(CARD_COLOR);
+        controlPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(189, 195, 199)),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+
+        JLabel modeLabel = new JLabel("Affichage :");
+        modeLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        modeLabel.setForeground(TEXT_COLOR);
+
+        JToggleButton graphButton = new JToggleButton("Graphe");
+        JToggleButton modulesButton = new JToggleButton("Modules avec CP");
+        ButtonGroup group = new ButtonGroup();
+        group.add(graphButton);
+        group.add(modulesButton);
+        graphButton.setSelected(true);
+
+        for (JToggleButton btn : new JToggleButton[]{graphButton, modulesButton}) {
+            btn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+            btn.setFocusPainted(false);
+            btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        }
+
+        controlPanel.add(modeLabel);
+        controlPanel.add(graphButton);
+        controlPanel.add(modulesButton);
+
+        CardLayout cardLayout = new CardLayout();
+        JPanel displayPanel = new JPanel(cardLayout);
+        displayPanel.setBackground(BACKGROUND_COLOR);
+
+        JComponent dendroView = createDendrogramPanel(classes);
+        displayPanel.add(dendroView, "GRAPH");
+
+        JComponent modulesView = createModulesPanel(classes);
+        displayPanel.add(modulesView, "MODULES");
+
+        graphButton.addActionListener(e -> cardLayout.show(displayPanel, "GRAPH"));
+        modulesButton.addActionListener(e -> cardLayout.show(displayPanel, "MODULES"));
+
+        mainPanel.add(controlPanel, BorderLayout.NORTH);
+        mainPanel.add(displayPanel, BorderLayout.CENTER);
+
+        return mainPanel;
+    }
+
+    private JPanel createDendrogramPanel(List<ClassInfo> classes) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BACKGROUND_COLOR);
+        if (classes == null || classes.isEmpty()) {
+            panel.add(new JLabel("Aucune analyse disponible. Lancez l'analyse d'abord."), BorderLayout.CENTER);
+            return panel;
+        }
+        try {
+            HierarchicalClusteringProcessor processor = new HierarchicalClusteringProcessor(classes);
+            DendrogramNode root = processor.cluster();
+            if (root == null) {
+                panel.add(new JLabel("Impossible de générer le dendrogramme."), BorderLayout.CENTER);
+            } else {
+                JScrollPane scrollPane = new JScrollPane(new DendrogramPanel(root));
+                scrollPane.setBorder(BorderFactory.createLineBorder(new Color(189, 195, 199), 1));
+                panel.add(scrollPane, BorderLayout.CENTER);
+            }
+        } catch (Exception ex) {
+            panel.add(new JLabel("Erreur lors du calcul du dendrogramme : " + ex.getMessage()), BorderLayout.CENTER);
+        }
+        return panel;
+    }
+
+    private JPanel createModulesPanel(List<ClassInfo> classes) {
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(BACKGROUND_COLOR);
+
+        if (classes == null || classes.isEmpty()) {
+            mainPanel.add(new JLabel("Aucune analyse disponible. Lancez l'analyse d'abord."), BorderLayout.CENTER);
+            return mainPanel;
+        }
+
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        controlPanel.setBackground(CARD_COLOR);
+        controlPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(189, 195, 199)),
+                BorderFactory.createEmptyBorder(10, 15, 10, 15)
+        ));
+
+        JLabel cpLabel = new JLabel("Seuil de couplage (CP) :");
+        cpLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        cpLabel.setForeground(TEXT_COLOR);
+
+        JTextField cpField = new JTextField("0.01", 8);
+        cpField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+
+        JButton identifyButton = createStyledButton("Identifier les modules", PRIMARY_COLOR);
+
+        controlPanel.add(cpLabel);
+        controlPanel.add(cpField);
+        controlPanel.add(Box.createHorizontalStrut(10));
+        controlPanel.add(identifyButton);
+
+        JPanel modulesDisplayPanel = new JPanel();
+        modulesDisplayPanel.setLayout(new BoxLayout(modulesDisplayPanel, BoxLayout.Y_AXIS));
+        modulesDisplayPanel.setBackground(BACKGROUND_COLOR);
+        modulesDisplayPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+        JLabel initialMessage = new JLabel("<html><div style='text-align: center; padding: 50px;'>" +
+                "<h2 style='color: #2ecc71;'>Identification de Modules</h2>" +
+                "<p style='margin-top: 20px;'>Cliquez sur 'Identifier les modules' pour lancer l'analyse.</p>" +
+                "<p style='margin-top: 10px; color: #7f8c8d;'>Le seuil de couplage (CP) détermine la force minimale du couplage<br>" +
+                "entre les classes d'un même module.</p>" +
+                "<br><b>Valeurs suggérées:</b><br>" +
+                "CP = 0.01 : modules très larges (couplage faible accepté)<br>" +
+                "CP = 0.05 : modules moyens<br>" +
+                "CP = 0.10 : modules compacts (couplage fort requis)" +
+                "</div></html>");
+        initialMessage.setHorizontalAlignment(JLabel.CENTER);
+        modulesDisplayPanel.add(initialMessage);
+
+        JScrollPane scrollPane = new JScrollPane(modulesDisplayPanel);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        identifyButton.addActionListener(e -> {
+            try {
+                double cp = Double.parseDouble(cpField.getText().trim());
+                if (cp < 0 || cp > 1) throw new NumberFormatException();
+
+                modulesDisplayPanel.removeAll();
+                JLabel loadingLabel = new JLabel("Identification des modules en cours...");
+                loadingLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+                loadingLabel.setForeground(PRIMARY_COLOR);
+                loadingLabel.setHorizontalAlignment(JLabel.CENTER);
+                modulesDisplayPanel.add(loadingLabel);
+                modulesDisplayPanel.revalidate();
+                modulesDisplayPanel.repaint();
+
+                SwingWorker<List<Module>, Void> worker = new SwingWorker<List<Module>, Void>() {
+                    @Override
+                    protected List<Module> doInBackground() {
+                        HierarchicalClusteringProcessor clusteringProcessor = new HierarchicalClusteringProcessor(classes);
+                        DendrogramNode root = clusteringProcessor.cluster();
+                        if (root == null) return Collections.emptyList();
+                        ModuleIdentifier identifier = new ModuleIdentifier(classes, cp);
+                        return identifier.identifyModules(root);
+                    }
+
+                    @Override
+                    protected void done() {
+                        try {
+                            List<Module> modules = get();
+                            modulesDisplayPanel.removeAll();
+                            if (modules.isEmpty()) {
+                                JPanel errorPanel = createErrorPanel(cp);
+                                modulesDisplayPanel.add(errorPanel);
+                            } else {
+                                displayModulesGraphically(modulesDisplayPanel, modules, classes);
+                            }
+                            modulesDisplayPanel.revalidate();
+                            modulesDisplayPanel.repaint();
+                        } catch (Exception ex) {
+                            modulesDisplayPanel.removeAll();
+                            JLabel errorLabel = new JLabel("<html><div style='text-align: center; color: #e74c3c;'>" +
+                                    "<h3>Erreur lors de l'identification</h3>" +
+                                    "<p>" + ex.getMessage() + "</p></div></html>");
+                            errorLabel.setHorizontalAlignment(JLabel.CENTER);
+                            modulesDisplayPanel.add(errorLabel);
+                            modulesDisplayPanel.revalidate();
+                            modulesDisplayPanel.repaint();
+                        }
+                    }
+                };
+                worker.execute();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(mainPanel,
+                        "Le seuil de couplage doit être un nombre entre 0 et 1.",
+                        "Erreur de saisie",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        mainPanel.add(controlPanel, BorderLayout.NORTH);
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        return mainPanel;
+    }
+
+    private void displayModulesGraphically(JPanel container, List<Module> modules, List<ClassInfo> allClasses) {
+        JPanel statsPanel = createModuleStatsPanel(modules, allClasses);
+        container.add(statsPanel);
+        container.add(Box.createVerticalStrut(20));
+
+        Color[] moduleColors = {
+                new Color(52, 152, 219),
+                new Color(46, 204, 113),
+                new Color(155, 89, 182),
+                new Color(241, 196, 15),
+                new Color(230, 126, 34),
+                new Color(231, 76, 60),
+                new Color(26, 188, 156),
+                new Color(52, 73, 94)
+        };
+
+        for (int i = 0; i < modules.size(); i++) {
+            Module module = modules.get(i);
+            Color moduleColor = moduleColors[i % moduleColors.length];
+            JPanel moduleCard = createModuleCard(module, i + 1, moduleColor, allClasses);
+            container.add(moduleCard);
+            container.add(Box.createVerticalStrut(15));
+        }
+    }
+
+    private JPanel createModuleCard(Module module, int moduleNumber, Color themeColor, List<ClassInfo> allClasses) {
+        JPanel card = new JPanel();
+        card.setLayout(new BorderLayout(10, 10));
+        card.setBackground(CARD_COLOR);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(themeColor, 2),
+                BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
+
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(themeColor);
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+
+        JLabel titleLabel = new JLabel("MODULE " + moduleNumber);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setForeground(Color.WHITE);
+
+        JLabel couplingLabel = new JLabel(String.format("Couplage: %.4f", module.getCouplingScore()));
+        couplingLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        couplingLabel.setForeground(Color.WHITE);
+
+        headerPanel.add(titleLabel, BorderLayout.WEST);
+        headerPanel.add(couplingLabel, BorderLayout.EAST);
+
+        JPanel bodyPanel = new JPanel();
+        bodyPanel.setLayout(new BoxLayout(bodyPanel, BoxLayout.Y_AXIS));
+        bodyPanel.setBackground(CARD_COLOR);
+        bodyPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+
+        JLabel classCountLabel = new JLabel("Classes (" + module.getClassNames().size() + "):");
+        classCountLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        classCountLabel.setForeground(TEXT_COLOR);
+        classCountLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        bodyPanel.add(classCountLabel);
+        bodyPanel.add(Box.createVerticalStrut(8));
+
+        JPanel classesGrid = new JPanel(new GridLayout(0, 3, 10, 10));
+        classesGrid.setBackground(CARD_COLOR);
+        classesGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        for (String className : module.getClassNames()) {
+            JPanel classBox = createClassBox(className, themeColor, allClasses);
+            classesGrid.add(classBox);
+        }
+
+        bodyPanel.add(classesGrid);
+
+        card.add(headerPanel, BorderLayout.NORTH);
+        card.add(bodyPanel, BorderLayout.CENTER);
+        return card;
+    }
+
+    private JPanel createClassBox(String className, Color themeColor, List<ClassInfo> allClasses) {
+        JPanel box = new JPanel();
+        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
+        box.setBackground(new Color(236, 240, 241));
+        box.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(themeColor.darker(), 1),
+                BorderFactory.createEmptyBorder(8, 10, 8, 10)
+        ));
+
+        JLabel nameLabel = new JLabel(className);
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        nameLabel.setForeground(themeColor.darker());
+        nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        ClassInfo classInfo = allClasses.stream()
+                .filter(c -> c.getName().equals(className))
+                .findFirst()
+                .orElse(null);
+
+        if (classInfo != null) {
+            JLabel methodsLabel = new JLabel(classInfo.getMethods().size() + " méthodes");
+            methodsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+            methodsLabel.setForeground(LIGHT_TEXT);
+            methodsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            JLabel attrsLabel = new JLabel(classInfo.getAttributes().size() + " attributs");
+            attrsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+            attrsLabel.setForeground(LIGHT_TEXT);
+            attrsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            box.add(nameLabel);
+            box.add(Box.createVerticalStrut(5));
+            box.add(methodsLabel);
+            box.add(attrsLabel);
+        } else {
+            box.add(nameLabel);
+        }
+
+        return box;
+    }
+
+    private JPanel createModuleStatsPanel(List<Module> modules, List<ClassInfo> allClasses) {
+        JPanel statsPanel = new JPanel(new GridLayout(1, 4, 15, 0));
+        statsPanel.setBackground(BACKGROUND_COLOR);
+        statsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
+
+        Set<String> coveredClasses = new HashSet<>();
+        for (Module module : modules) {
+            coveredClasses.addAll(module.getClassNames());
+        }
+
+        double avgModuleSize = modules.stream().mapToInt(Module::size).average().orElse(0.0);
+        double avgCoupling = modules.stream().mapToDouble(Module::getCouplingScore).average().orElse(0.0);
+        double coverage = allClasses.isEmpty() ? 0.0 : (coveredClasses.size() * 100.0) / allClasses.size();
+
+        statsPanel.add(createStatCard("Modules identifiés", String.valueOf(modules.size()), "Nombre total de modules"));
+        statsPanel.add(createStatCard("Couverture", String.format("%.1f%%", coverage), "Classes dans des modules"));
+        statsPanel.add(createStatCard("Taille moyenne", String.format("%.1f", avgModuleSize), "Classes par module"));
+        statsPanel.add(createStatCard("Couplage moyen", String.format("%.4f", avgCoupling), "Force de cohésion"));
+
+        return statsPanel;
+    }
+
+    private JPanel createErrorPanel(double cp) {
+        JPanel errorPanel = new JPanel();
+        errorPanel.setLayout(new BoxLayout(errorPanel, BoxLayout.Y_AXIS));
+        errorPanel.setBackground(BACKGROUND_COLOR);
+        errorPanel.setBorder(BorderFactory.createEmptyBorder(50, 50, 50, 50));
+
+        JLabel titleLabel = new JLabel("Aucun module identifié");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLabel.setForeground(new Color(231, 76, 60));
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel messageLabel = new JLabel("<html><div style='text-align: center; margin-top: 20px;'>" +
+                "Aucun module ne satisfait les contraintes avec CP = " + cp + "<br><br>" +
+                "<b>Suggestions:</b><br>" +
+                "• Réduire le seuil de couplage (CP)<br>" +
+                "• Vérifier que les classes ont des relations d'appel<br>" +
+                "• Essayer CP = 0.001 pour des modules plus larges" +
+                "</div></html>");
+        messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        messageLabel.setForeground(TEXT_COLOR);
+        messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        errorPanel.add(titleLabel);
+        errorPanel.add(Box.createVerticalStrut(15));
+        errorPanel.add(messageLabel);
+        return errorPanel;
+    }
+    // ===== Fin Dendrogramme & Modules =====
+
     private void showError(String message) {
         JOptionPane.showMessageDialog(
                 this,
@@ -1157,3 +1520,4 @@ public class AnalyseurSpoonGUI extends JFrame {
         });
     }
 }
+
