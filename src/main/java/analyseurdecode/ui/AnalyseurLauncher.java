@@ -201,7 +201,7 @@ public class AnalyseurLauncher {
         panel.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
 
         JLabel infoLabel = new JLabel(
-                "<html><center>💡 <b>Conseil:</b> Utilisez le Mode Standard si vous n'avez pas configuré Spoon<br>" +
+                "<html><center> <b>Conseil:</b> Utilisez le Mode Standard si vous n'avez pas configuré Spoon<br>" +
                         "Les deux modes offrent les mêmes fonctionnalités d'analyse</center></html>"
         );
         infoLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
