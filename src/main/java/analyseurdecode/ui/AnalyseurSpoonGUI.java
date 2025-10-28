@@ -696,12 +696,10 @@ public class AnalyseurSpoonGUI extends JFrame {
 
         JToggleButton textButton = new JToggleButton("Textuel");
         JToggleButton graphButton = new JToggleButton("Graphique");
-       // JToggleButton dotButton = new JToggleButton("DOT");
 
         ButtonGroup group = new ButtonGroup();
         group.add(textButton);
         group.add(graphButton);
-        //group.add(dotButton);
         textButton.setSelected(true);
 
         for (JToggleButton btn : new JToggleButton[]{textButton, graphButton}) {
@@ -713,7 +711,6 @@ public class AnalyseurSpoonGUI extends JFrame {
         controlPanel.add(modeLabel);
         controlPanel.add(textButton);
         controlPanel.add(graphButton);
-        //controlPanel.add(dotButton);
 
         CardLayout cardLayout = new CardLayout();
         JPanel displayPanel = new JPanel(cardLayout);
@@ -730,7 +727,6 @@ public class AnalyseurSpoonGUI extends JFrame {
 
         textButton.addActionListener(e -> cardLayout.show(displayPanel, "TEXT"));
         graphButton.addActionListener(e -> cardLayout.show(displayPanel, "GRAPH"));
-        //dotButton.addActionListener(e -> cardLayout.show(displayPanel, "DOT"));
 
         mainPanel.add(controlPanel, BorderLayout.NORTH);
         mainPanel.add(displayPanel, BorderLayout.CENTER);
@@ -1459,7 +1455,6 @@ public class AnalyseurSpoonGUI extends JFrame {
         errorPanel.add(messageLabel);
         return errorPanel;
     }
-    // ===== Fin Dendrogramme & Modules =====
 
     private void showError(String message) {
         JOptionPane.showMessageDialog(

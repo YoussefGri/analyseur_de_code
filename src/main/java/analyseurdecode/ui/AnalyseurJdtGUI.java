@@ -22,7 +22,7 @@ import java.io.File;
 import java.util.*;
 import java.util.List;
 
-public class AnalyseurGUI extends JFrame {
+public class AnalyseurJdtGUI extends JFrame {
     // Couleurs du thème
     private static final Color PRIMARY_COLOR = new Color(41, 128, 185);
     private static final Color SECONDARY_COLOR = new Color(52, 73, 94);
@@ -46,7 +46,7 @@ public class AnalyseurGUI extends JFrame {
     // Stocke la dernière liste de classes analysées
     private List<ClassInfo> lastAnalyzedClasses = null;
 
-    public AnalyseurGUI() {
+    public AnalyseurJdtGUI() {
         setTitle("Analyseur de Code Java - Orienté Objet");
         setSize(1600, 1000);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -178,7 +178,7 @@ public class AnalyseurGUI extends JFrame {
                 return;
             }
             List<ClassInfo> classes = getLastAnalyzedClasses();
-            System.out.println("[createControlPanel - AnalyseurGUI] : " + classes);
+            System.out.println("[createControlPanel - AnalyseurJdtGUI] : " + classes);
             if (classes == null) {
                 couplingResultLabel.setText("Veuillez d'abord lancer l'analyse.");
                 return;
@@ -939,7 +939,7 @@ private JComponent createMatrixCouplingGraph(List<ClassInfo> classes) {
         return panel;
     }
     // ========================================================================
-// AJOUT DANS AnalyseurGUI.java - VERSION GRAPHIQUE AMÉLIORÉE
+// AJOUT DANS AnalyseurJdtGUI.java - VERSION GRAPHIQUE AMÉLIORÉE
 // ========================================================================
 
     // 1. Dans la méthode createCallGraphPanel(), ajouter un bouton "Modules":
@@ -1624,7 +1624,7 @@ private JComponent createCouplingGraphComponent(List<ClassInfo> classes) {
         }
 
         SwingUtilities.invokeLater(() -> {
-            AnalyseurGUI gui = new AnalyseurGUI();
+            AnalyseurJdtGUI gui = new AnalyseurJdtGUI();
             gui.setVisible(true);
         });
     }
