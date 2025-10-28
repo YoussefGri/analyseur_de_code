@@ -2,10 +2,10 @@ package analyseurdecode.ui;
 
 import analyseurdecode.model.ClassInfo;
 import analyseurdecode.model.MethodInfo; // Nouveau
-import analyseurdecode.parser.SourceParser;
-import analyseurdecode.visitors.ClassVisitor;
-import analyseurdecode.visitors.CallGraphVisitor; // Nouveau
-import analyseurdecode.processor.StatisticsProcessor;
+import analyseurdecode.jdt.parser.SourceParser;
+import analyseurdecode.jdt.visitors.ClassVisitor;
+import analyseurdecode.jdt.visitors.CallGraphVisitor; // Nouveau
+import analyseurdecode.jdt.processor.StatisticsProcessor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
 import java.io.File;
@@ -43,6 +43,14 @@ public class CliApp {
 		}
 
 		new StatisticsProcessor().computeStatistics(classes, X);
+
+		// Interaction utilisateur pour le couplage
+		java.util.Scanner scanner = new java.util.Scanner(System.in);
+		System.out.print("Entrez le nom de la première classe pour le couplage : ");
+		String classA = scanner.nextLine().trim();
+		System.out.print("Entrez le nom de la seconde classe pour le couplage : ");
+		String classB = scanner.nextLine().trim();
+		new StatisticsProcessor().printCouplingMetric(classes, classA, classB);
 
 		displayCallGraph(classes, allMethodsMap);
 	}
