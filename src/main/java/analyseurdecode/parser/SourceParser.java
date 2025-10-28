@@ -1,25 +1,3 @@
-/*package analyseurdecode.parser;
-
-import org.eclipse.jdt.core.dom.ASTParser;
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-
-public class SourceParser {
-
-    public CompilationUnit parse(File file) throws IOException {
-        String source = new String(Files.readAllBytes(file.toPath()));
-        ASTParser parser = ASTParser.newParser(AST.JLS8);
-        parser.setSource(source.toCharArray());
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        return (CompilationUnit) parser.createAST(null);
-    }
-}*/
-
-// Fichier : analyseurdecode.parser.SourceParser.java
 package analyseurdecode.parser;
 
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -47,13 +25,13 @@ public class SourceParser {
         parser.setCompilerOptions(options);
         parser.setUnitName(file.getName());
 
-        // --- CONFIG ---
+        //CONFIG
         
         String javaHome = System.getProperty("java.home");
         
-        String jrePath = javaHome + File.separator + "jmods"; // pour java 17
+        String jrePath = javaHome + File.separator + "jmods";
         
-        // Dossiers sources (Le chemin fourni par l'interface utilisateur)
+        // Dossiers sources (Le chemin est fourni par l'interface utilisateur)
         String[] sources = { projectSourcePath };
         String[] classpath = { jrePath }; 
 

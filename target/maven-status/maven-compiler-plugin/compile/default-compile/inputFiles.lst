@@ -3,7 +3,10 @@
 /Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/model/ClassInfo.java
 /Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/model/MethodInfo.java
 /Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/model/Module.java
+/Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/parser/MethodCallAnalyzer.java
 /Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/parser/SourceParser.java
+/Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/parser/SpoonModelExtractor.java
+/Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/parser/SpoonParserConfig.java
 /Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/parser/SpoonSourceParser.java
 /Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/processor/Cluster.java
 /Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/processor/DendrogramNode.java
@@ -17,7 +20,6 @@
 /Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/ui/AnalyseurSpoonGUI.java
 /Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/ui/CallGraphPanel.java
 /Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/ui/CliApp.java
-/Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/ui/DendrogramModulesTabBuilder.java
 /Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/ui/DendrogramPanel.java
 /Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/visitors/CallGraphVisitor.java
 /Users/youssefgr/Desktop/Evo_log/TD/TP-2/analyseur_de_code/src/main/java/analyseurdecode/visitors/ClassVisitor.java

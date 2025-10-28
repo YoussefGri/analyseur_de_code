@@ -1,8 +1,5 @@
 package analyseurdecode.ui;
 
-import analyseurdecode.ui.AnalyseurGUI;
-import analyseurdecode.ui.AnalyseurSpoonGUI;
-
 import javax.swing.*;
 import java.awt.*;
 
@@ -279,7 +276,7 @@ public class AnalyseurLauncher {
         );
 
         if (choice == JOptionPane.OK_OPTION) {
-            // Relancer le sélecteur
+            // Relancer le selecteur
             showModeSelectionDialog();
         }
     }
