@@ -1,4 +1,4 @@
-package analyseurdecode.visitors;
+package analyseurdecode.jdt.visitors;
 
 import analyseurdecode.model.MethodInfo;
 import org.eclipse.jdt.core.dom.*;

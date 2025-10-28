@@ -1,13 +1,10 @@
-package analyseurdecode.ui;
+package analyseurdecode.ui.utils;
 
 import analyseurdecode.model.ClassInfo;
 import analyseurdecode.model.MethodInfo;
 import com.mxgraph.layout.hierarchical.mxHierarchicalLayout;
-import com.mxgraph.layout.mxCircleLayout;
-import com.mxgraph.layout.mxIGraphLayout;
 import com.mxgraph.swing.mxGraphComponent;
 import com.mxgraph.util.mxConstants;
-import com.mxgraph.util.mxStyleUtils;
 import com.mxgraph.view.mxGraph;
 
 import javax.swing.*;

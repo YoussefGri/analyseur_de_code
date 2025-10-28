@@ -2,10 +2,10 @@ package analyseurdecode.ui;
 
 import analyseurdecode.model.ClassInfo;
 import analyseurdecode.model.MethodInfo; // Nouveau
-import analyseurdecode.parser.SourceParser;
-import analyseurdecode.visitors.ClassVisitor;
-import analyseurdecode.visitors.CallGraphVisitor; // Nouveau
-import analyseurdecode.processor.StatisticsProcessor;
+import analyseurdecode.jdt.parser.SourceParser;
+import analyseurdecode.jdt.visitors.ClassVisitor;
+import analyseurdecode.jdt.visitors.CallGraphVisitor; // Nouveau
+import analyseurdecode.jdt.processor.StatisticsProcessor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
 import java.io.File;

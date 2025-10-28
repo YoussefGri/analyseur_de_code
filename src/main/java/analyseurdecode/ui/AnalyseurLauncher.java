@@ -1,8 +1,5 @@
 package analyseurdecode.ui;
 
-import analyseurdecode.ui.AnalyseurGUI;
-import analyseurdecode.ui.AnalyseurSpoonGUI;
-
 import javax.swing.*;
 import java.awt.*;
 
@@ -28,7 +25,7 @@ public class AnalyseurLauncher {
 
     private static void showModeSelectionDialog() {
         JDialog dialog = new JDialog((Frame) null, "Analyseur de Code Java", true);
-        dialog.setSize(700, 500);
+        dialog.setSize(1600, 800);
         dialog.setLocationRelativeTo(null);
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
@@ -279,7 +276,7 @@ public class AnalyseurLauncher {
         );
 
         if (choice == JOptionPane.OK_OPTION) {
-            // Relancer le sélecteur
+            // Relancer le selecteur
             showModeSelectionDialog();
         }
     }

@@ -1,4 +1,4 @@
-package analyseurdecode.processor;
+package analyseurdecode.jdt.processor;
 
 import analyseurdecode.model.AttributeInfo;
 import analyseurdecode.model.ClassInfo;
@@ -99,7 +99,7 @@ public class StatisticsService {
                             abRelationships++;
                         }
                     }
-                    // Type générique (ex : List<Shape>)
+                    // Type générique
                     if (paramType.contains("<") && paramType.contains(">")) {
                         String genericType = paramType.substring(paramType.indexOf('<')+1, paramType.indexOf('>')).trim();
                         if (classNames.contains(genericType) && !sourceClass.equals(genericType)) {

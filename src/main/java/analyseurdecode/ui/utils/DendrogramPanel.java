@@ -1,11 +1,10 @@
-package analyseurdecode.ui;
+package analyseurdecode.ui.utils;
 
-import analyseurdecode.processor.DendrogramNode;
-import analyseurdecode.processor.Cluster;
+import analyseurdecode.jdt.processor.DendrogramNode;
+import analyseurdecode.jdt.processor.Cluster;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.geom.RoundRectangle2D;
 import java.util.Set;
 
 public class DendrogramPanel extends JPanel {

@@ -2,7 +2,7 @@ package analyseurdecode.ui;
 
 import analyseurdecode.model.ClassInfo;
 import analyseurdecode.model.MethodInfo;
-import analyseurdecode.parser.SpoonSourceParser;
+import analyseurdecode.spoon.parser.SpoonSourceParser;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -12,9 +12,10 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 import analyseurdecode.model.Module;
-import analyseurdecode.processor.DendrogramNode;
-import analyseurdecode.processor.HierarchicalClusteringProcessor;
-import analyseurdecode.processor.ModuleIdentifier;
+import analyseurdecode.jdt.processor.DendrogramNode;
+import analyseurdecode.jdt.processor.HierarchicalClusteringProcessor;
+import analyseurdecode.jdt.processor.ModuleIdentifier;
+import analyseurdecode.ui.utils.DendrogramPanel;
 
 public class AnalyseurSpoonGUI extends JFrame {
 
@@ -38,7 +39,7 @@ public class AnalyseurSpoonGUI extends JFrame {
 
     public AnalyseurSpoonGUI() {
         setTitle("Analyseur de Code Java - Mode Spoon");
-        setSize(1200, 800);
+        setSize(1600, 1000);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -205,40 +206,23 @@ public class AnalyseurSpoonGUI extends JFrame {
         contentPanel.setBackground(CARD_COLOR);
         contentPanel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
 
-        JLabel titleLabel = new JLabel("Analyseur Spoon");
+        JLabel titleLabel = new JLabel("Analyseur de Code Java");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_COLOR);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel subtitleLabel = new JLabel("Analyse de Couplage entre Classes");
+        JLabel subtitleLabel = new JLabel("Analyse statique orientée objet");
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         subtitleLabel.setForeground(LIGHT_TEXT);
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JTextArea instructionsArea = new JTextArea();
+        instructionsArea.setSize(500, 300);
         instructionsArea.setText(
-                "Bienvenue dans l'Analyseur de Couplage Spoon!\n\n" +
-                        "Cette application analyse le couplage entre les classes Java.\n\n" +
-                        "Métrique de Couplage :\n" +
-                        "   Couplage(A,B) = Nombre de relations entre méthodes de A et B\n" +
-                        "                   ──────────────────────────────────────────\n" +
-                        "                   Nombre total de relations dans l'application\n\n" +
-                        "   Où une relation = un appel entre A.mi() et B.mj()\n\n" +
-                        "Fonctionnalités :\n" +
-                        "   - Extraction automatique des classes et méthodes\n" +
-                        "   - Construction du graphe d'appel\n" +
-                        "   - Calcul de la matrice de couplage\n" +
-                        "   - Génération du graphe pondéré\n" +
-                        "   - Identification des classes fortement couplées\n\n" +
-                        "Instructions :\n\n" +
-                        "1. Sélectionnez un dossier contenant des fichiers Java\n\n" +
-                        "2. Définissez le nombre minimum de méthodes (filtrage)\n\n" +
-                        "3. Cliquez sur 'Lancer l'Analyse'\n\n" +
-                        "4. Consultez les résultats dans les onglets :\n" +
-                        "   - Résumé : statistiques globales\n" +
-                        "   - Matrice de Couplage : valeurs détaillées\n" +
-                        "   - Graphe : visualisation du couplage\n" +
-                        "   - Top Couplages : classement des couplages"
+                "Instructions d'utilisation :\n\n" +
+                        "1. Sélectionnez un dossier contenant des fichiers Java (.java)\n\n" +
+                        "2. Définissez le nombre minimum de méthodes pour le filtrage\n\n" +
+                        "3. Cliquez sur 'Lancer l'Analyse' pour commencer\n\n"
         );
         instructionsArea.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         instructionsArea.setForeground(TEXT_COLOR);

@@ -3,14 +3,15 @@ package analyseurdecode.ui;
 import analyseurdecode.model.ClassInfo;
 import analyseurdecode.model.MethodInfo;
 import analyseurdecode.model.Module;
-import analyseurdecode.parser.SourceParser;
-import analyseurdecode.processor.*;
-import analyseurdecode.visitors.ClassVisitor;
-import analyseurdecode.visitors.CallGraphVisitor;
+import analyseurdecode.jdt.parser.SourceParser;
+import analyseurdecode.jdt.processor.*;
+import analyseurdecode.jdt.visitors.ClassVisitor;
+import analyseurdecode.jdt.visitors.CallGraphVisitor;
+import analyseurdecode.ui.utils.CallGraphPanel;
+import analyseurdecode.ui.utils.DendrogramPanel;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
@@ -20,7 +21,6 @@ import java.awt.*;
 import java.io.File;
 import java.util.*;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class AnalyseurGUI extends JFrame {
     // Couleurs du thème
@@ -48,7 +48,7 @@ public class AnalyseurGUI extends JFrame {
 
     public AnalyseurGUI() {
         setTitle("Analyseur de Code Java - Orienté Objet");
-        setSize(1200, 800);
+        setSize(1600, 1000);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -183,7 +183,7 @@ public class AnalyseurGUI extends JFrame {
                 couplingResultLabel.setText("Veuillez d'abord lancer l'analyse.");
                 return;
             }
-            double coupling = new analyseurdecode.processor.StatisticsService().computeCouplingMetric(classes, classA, classB);
+            double coupling = new analyseurdecode.jdt.processor.StatisticsService().computeCouplingMetric(classes, classA, classB);
             couplingResultLabel.setText("Couplage entre " + classA + " et " + classB + " : " + coupling);
             System.out.println("Couplage entre " + classA + " et " + classB + " : " + coupling);
         });
@@ -1592,12 +1592,12 @@ private JComponent createCouplingGraphComponent(List<ClassInfo> classes) {
             return panel;
         }
         try {
-            analyseurdecode.processor.HierarchicalClusteringProcessor processor = new analyseurdecode.processor.HierarchicalClusteringProcessor(classes);
-            analyseurdecode.processor.DendrogramNode root = processor.cluster();
+            analyseurdecode.jdt.processor.HierarchicalClusteringProcessor processor = new analyseurdecode.jdt.processor.HierarchicalClusteringProcessor(classes);
+            analyseurdecode.jdt.processor.DendrogramNode root = processor.cluster();
             if (root == null) {
                 panel.add(new JLabel("Impossible de générer le dendrogramme."), BorderLayout.CENTER);
             } else {
-                JScrollPane scrollPane = new JScrollPane(new analyseurdecode.ui.DendrogramPanel(root));
+                JScrollPane scrollPane = new JScrollPane(new DendrogramPanel(root));
                 scrollPane.setBorder(BorderFactory.createLineBorder(new Color(189, 195, 199), 1));
                 panel.add(scrollPane, BorderLayout.CENTER);
             }

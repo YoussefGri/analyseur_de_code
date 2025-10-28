@@ -3,10 +3,6 @@ package analyseurdecode.model;
 import java.util.HashSet;
 import java.util.Set;
 
-/*
-  Représente un module/composant/service identifié dans l'application.
-  Un module est un ensemble de classes fortement couplées.
- */
 public class Module {
     private Set<String> classNames;
     private double couplingScore;

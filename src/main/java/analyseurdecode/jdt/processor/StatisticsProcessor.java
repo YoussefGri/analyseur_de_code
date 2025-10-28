@@ -1,4 +1,4 @@
-package analyseurdecode.processor;
+package analyseurdecode.jdt.processor;
 
 import analyseurdecode.model.ClassInfo;
 

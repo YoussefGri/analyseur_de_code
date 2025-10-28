@@ -1,4 +1,4 @@
-package analyseurdecode.visitors;
+package analyseurdecode.jdt.visitors;
 
 import analyseurdecode.model.ClassInfo;
 import analyseurdecode.model.MethodInfo;

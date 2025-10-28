@@ -1,17 +1,10 @@
-package analyseurdecode.processor;
+package analyseurdecode.jdt.processor;
 
 import analyseurdecode.model.ClassInfo;
 import analyseurdecode.model.Module;
 
 import java.util.*;
 
-/*
-  Identifie les modules/groupes de classes couplées à partir d'un dendrogramme.
-  Contraintes:
-  - Une application doit avoir au plus M/2 modules (M = nombre de classes)
-  - Chaque module contient uniquement les classes d'une seule branche du dendrogramme
- - La moyenne du couplage de tous les couples de classes du module doit être > CP
- */
 public class ModuleIdentifier {
     private final List<ClassInfo> classes;
     private final StatisticsService statsService;
@@ -25,11 +18,6 @@ public class ModuleIdentifier {
         this.maxModules = Math.max(1, classes.size() / 2);
     }
 
-    /*
-      Identifie les modules à partir du dendrogramme
-      @param root Le nœud racine du dendrogramme généré par le clustering hiérarchique
-      @return Liste des modules identifiés
-     */
     public List<Module> identifyModules(DendrogramNode root) {
         if (root == null) {
             return new ArrayList<>();
@@ -51,9 +39,6 @@ public class ModuleIdentifier {
         return validModules;
     }
 
-    /*
-      Extrait toutes les branches du dendrogramme comme modules candidats
-     */
     private void extractCandidateBranches(DendrogramNode node, List<Module> candidateModules) {
         if (node == null) {
             return;
@@ -81,9 +66,6 @@ public class ModuleIdentifier {
         extractCandidateBranches(node.rightNode, candidateModules);
     }
 
-    /*
-      Récupère toutes les classes d'un sous-arbre du dendrogramme
-     */
     private Set<String> getAllClassesInSubtree(DendrogramNode node) {
         Set<String> classes = new HashSet<>();
 
@@ -101,9 +83,6 @@ public class ModuleIdentifier {
         return classes;
     }
 
-    /*
-      Calcule la moyenne du couplage entre tous les couples de classes d'un ensemble
-     */
     private double calculateAverageCoupling(Set<String> classNames) {
         if (classNames.size() <= 1) {
             return 0.0;
@@ -128,11 +107,6 @@ public class ModuleIdentifier {
         return pairCount > 0 ? totalCoupling / pairCount : 0.0;
     }
 
-    /*
-      Filtre les modules candidats selon les contraintes:
-      - Couplage moyen > CP
-      - Pas de chevauchement entre modules
-     */
     private List<Module> filterValidModules(List<Module> candidateModules) {
         // Trier par couplage décroissant
         candidateModules.sort((m1, m2) -> Double.compare(m2.getCouplingScore(), m1.getCouplingScore()));
@@ -141,12 +115,12 @@ public class ModuleIdentifier {
         Set<String> usedClasses = new HashSet<>();
 
         for (Module module : candidateModules) {
-            // Vérifier le seuil de couplage
+            // seuil
             if (module.getCouplingScore() <= couplingThreshold) {
                 continue;
             }
 
-            // Vérifier qu'il n'y a pas de chevauchement avec des modules déjà sélectionnés
+            // pas de chevauchement avec des modules déjà sélectionnés
             boolean hasOverlap = false;
             for (String className : module.getClassNames()) {
                 if (usedClasses.contains(className)) {
@@ -164,10 +138,6 @@ public class ModuleIdentifier {
         return validModules;
     }
 
-    /*
-      Sélectionne les meilleurs modules si le nombre dépasse M/2
-      Stratégie: privilégier les modules avec le meilleur couplage et le plus de classes
-     */
     private List<Module> selectBestModules(List<Module> validModules, int maxCount) {
         // Calculer un score combinant couplage et taille
         validModules.sort((m1, m2) -> {
@@ -179,9 +149,6 @@ public class ModuleIdentifier {
         return validModules.subList(0, Math.min(maxCount, validModules.size()));
     }
 
-    /*
-      Génère un rapport textuel des modules identifiés
-     */
     public String generateModuleReport(List<Module> modules) {
         StringBuilder sb = new StringBuilder();
         sb.append("═══════════════════════════════════════════════════════════════════════\n");

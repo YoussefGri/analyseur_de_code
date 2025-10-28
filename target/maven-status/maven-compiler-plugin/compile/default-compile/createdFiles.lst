@@ -1,9 +1,4 @@
-analyseurdecode/Main.class
-analyseurdecode/processor/StatisticsProcessor.class
-analyseurdecode/model/MethodInfo.class
-analyseurdecode/model/ClassInfo.class
-analyseurdecode/parser/SourceParser.class
-analyseurdecode/processor/StatisticsResult.class
-analyseurdecode/ui/AnalyseurGUI.class
-analyseurdecode/model/AttributeInfo.class
-analyseurdecode/processor/StatisticsService.class
+analyseurdecode/parser/SpoonParserConfig.class
+analyseurdecode/parser/SpoonModelExtractor$ExtractionResult.class
+analyseurdecode/parser/MethodCallAnalyzer.class
+analyseurdecode/parser/SpoonModelExtractor.class
